@@ -7,7 +7,6 @@ pokemons = pd.read_csv("pokedex.csv")
 pokemons['Type 2'].replace((np.nan), ('NoType'), inplace=True)
 type_1 = pokemons['Type 1'].unique()
 type_2 = pokemons['Type 2'].unique()
-
 type_2 = np.delete(type_2, np.where(type_2 == 'NoType'))
 
 pokemon_types = pd.Series(type_1).append(pd.Series(type_2)).unique()
@@ -17,11 +16,9 @@ for i in pokemon_types:
     mlps.append(pickle.load(open(f"ultra_good_models/{i}.sav", 'rb')))
 
 parms = ['HP', 'Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed', 'Generation']
-
 get_parms = []
 
 print('Insert the features:')
-
 for i in parms:
     parm = ""
     while not parm.isnumeric():
@@ -44,15 +41,23 @@ while is_legendary != 'y' and is_legendary != 'n':
 to_predict = [get_parms]
 
 predictions = []
+min_loss_curve = []
 for index, mlp in enumerate(mlps):
     pred = mlp.predict(to_predict)
-    predictions.append([pred, pokemon_types[index]])
+    min_loss_curve.append(min(mlp.loss_curve_))
+    predictions.append(pred)
 
-print('Results:')
-found = False
+results = []
 for index, pred in enumerate(predictions):
-    if pred[0] == 1:
-        found = True
-        print(pred[1])
-    elif index == len(predictions) - 1 and not found:
-        print('No pokemon types found')
+    if pred == 1:
+        results.append(index)
+min_loss_curve_of_results = {}
+for index in results:
+    min_loss_curve_of_results.update({index: min_loss_curve[index]})
+
+best_results = list(dict(sorted(min_loss_curve_of_results.items(), key=lambda item: item[1])).keys())[:2]
+for index in best_results:
+    print(pokemon_types[index])
+
+if not np.any(predictions):
+    print('No pokemon types found')
